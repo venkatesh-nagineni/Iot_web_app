@@ -1,28 +1,26 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import 'chartjs-plugin-streaming';
+import { BaseChartDirective } from 'ng2-charts/ng2-charts';
 import { PubNubAngular } from 'pubnub-angular2';
-import * as Highcharts from 'highcharts';
 
 export interface Message {
   message: {
-    temperature: any;
-    fahrenheit: any;
+    voltage: number;
   };
 }
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  selector: 'app-charts',
+  templateUrl: './charts.component.html',
+  styleUrls: ['./charts.component.css']
 })
-export class AppComponent implements OnInit {
+export class ChartsComponent implements OnInit {
 
-  chart: Object;
-  options: Object;
-  latesttemp: any;
-  pausestart: boolean;
-  fahrenheit: any;
-  notfound: boolean;
+  @ViewChild('myChart') myChart: BaseChartDirective;
+  options: any;
+  datasets: any;
   timeinterval: any;
+  voltage: number;
 
   constructor(public pubnub: PubNubAngular) {
     this.pubnubinit();
@@ -30,10 +28,10 @@ export class AppComponent implements OnInit {
     setInterval(() => {
       clearInterval(this.timeinterval);
       this.ngOnInit();
-    }, 180000);
-  }
+    }, 120000);
+   }
 
-  // initialze pubnub keys
+    // initialze pubnub keys
   pubnubinit() {
     this.pubnub.init({
       publishKey: 'pub-c-7bc573ca-a768-407f-b8d2-df39e5694b87',
@@ -41,76 +39,107 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // subscribe to the channel to which channel we had published
   ngOnInit() {
-    this.pausestart = true;
-    this.pubnub.subscribe({ channels: ['temp_thermo_iot'], triggerEvents: ['message', 'status']});
+    this.pubnub.subscribe({ channels: ['temp_thermo_iot'], triggerEvents: ['message', 'status'] });
     this.getdata();
+
+    this.datasets = [{
+      type: 'line',
+      borderColor: '#ffa500',
+      borderWidth: 3,
+      pointRadius: 0,
+      data: []
+    }];
     this.options = {
-      chart: { type: 'spline' },
-      title: { text: 'Real Time Sensor Data' },
-      animation: Highcharts['svg'],
-      responsive: true,
-      credits: false,
-      margin: 0,
-      series: [{ data: [] }],
-      xAxis: {
-        type: 'datetime',
-        tickPixelInterval: 150,
-        title: {
-          text: 'Current Time'
-        }
-      },
-      yAxis: {
-        title: {
-          text: 'Temperature in Celsius'
-        },
-        plotLines: [{
-          value: 0,
-          width: 1,
-          color: '#808080'
-        }]
-      },
-      tooltip: {
-        formatter: function () {
-          return '<b>' + 'Current Temperature' + '</b><br/>' +
-            Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
-            '<b>' + Highcharts.numberFormat(this.y, 4) + '</b>';
-        }
+      title: {
+        display: true,
+        text: 'Real Time Breathe Sensor Data',
+        fontSize: 20,
+        fontColor: '#fff',
+        padding: 20
       },
       legend: {
-        enabled: false
+        display: false
       },
-      exporting: {
-        enabled: false
+      responsive: true,
+      mainAspectRatio: false,
+      tooltips: {
+        mode: 'nearest',
+        intersect: false
       },
-    };
-    this.timeinterval = setInterval(() => {
-      const x = (new Date()).getTime() + 7200000; // current time
-      if (this.latesttemp) {
-        this.chart['series'][0].addPoint([x, this.latesttemp], this.pausestart );
+      scales: {
+        xAxes: [{
+          type: 'realtime',
+          gridLines: {
+            drawOnChartArea: false,
+            color: '#fff',
+            lineWidth: 1
+          },
+          ticks: {
+            fontColor: '#fff',
+          },
+          scaleLabel: {
+            display: true,
+            labelString: 'Current Time',
+            fontColor: 'white'
+          }
+        }],
+        yAxes: [{
+          gridLines: {
+            drawOnChartArea: false,
+            color: '#fff',
+            lineWidth: 1
+          },
+          ticks: {
+            beginAtZero: true,
+            steps: 5,
+            stepValue: 0.5,
+            max: 3,
+            fontColor: '#fff'
+          },
+          scaleLabel: {
+            display: true,
+            labelString: 'Voltage',
+            fontColor: 'white',
+          }
+        }]
+      },
+       plugins: {
+        streaming: {
+          onRefresh: (chart: any) => {
+            chart.data.datasets.forEach((dataset: any) => {
+              this.binding(dataset);
+            });
+          },
+          duration: 5000,
+          refresh: 25,
+        }
       }
-    }, 3000);
+    };
   }
 
-  saveInstance(chartInstance) {
-    this.chart = chartInstance;
-  }
-
-  // get data from channel which we have subscribed
-  getdata() {
-    this.pubnub.getMessage('temp_thermo_iot', (msg: Message) => {
-        this.latesttemp = msg.message.temperature;
-        this.fahrenheit = msg.message.fahrenheit;
+  binding(dataset) {
+    dataset.data.push({
+      x: Date.now(),
+      y: this.voltage
     });
   }
 
   pause() {
-    this.pausestart = false;
+    this.myChart.chart.options.plugins.streaming.pause = true;
+    this.myChart.chart.update({duration: 0});
   }
 
   start() {
-    this.pausestart = true;
+    this.myChart.chart.options.plugins.streaming.pause = false;
+    this.myChart.chart.update({duration: 0});
   }
+
+    // get data from channel which we have subscribed
+    getdata() {
+      this.pubnub.getMessage('temp_thermo_iot', (msg: Message) => {
+        this.voltage = Number(msg.message.voltage);
+      });
+    }
 
 }
