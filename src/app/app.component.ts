@@ -24,11 +24,6 @@ export class ChartsComponent implements OnInit {
 
   constructor(public pubnub: PubNubAngular) {
     this.pubnubinit();
-
-    setInterval(() => {
-      clearInterval(this.timeinterval);
-      this.ngOnInit();
-    }, 120000);
    }
 
     // initialze pubnub keys
