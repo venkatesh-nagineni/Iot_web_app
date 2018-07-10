@@ -1,3 +1,4 @@
+<div class="containerfull">
   <div class="row">
     <div class="col-xs-4 col-sm-4 col-lg-4">
       <img src="assets/images/mst.png" alt="university logo"> </div>
@@ -5,25 +6,23 @@
       <h1 class="heading"> Real Time Breathe Sensor Data</h1>
     </div>
   </div>
+</div>
 
 <div>
-  <div>
-    <canvas height="110" baseChart #myChart="base-chart" [datasets]="datasets" [options]="options">
-    </canvas>
-  </div>
-  <br>
-  <div class="card">
-    <div class="containerdiv">
-      <h4>
-        <b>Current Voltage : {{voltage}}</b>
-      </h4>
-    </div>
-  </div>
+  <canvas height="100" baseChart #myChart="base-chart" [datasets]="datasets" [options]="options"> </canvas>
+</div>
 
-  <div class="secondcard">
-    <div id="containerdiv">
-      <button type="button home-button" id="button1" (click)="pause()">Pause</button>
-      <button type="button contact-button" id="button2" (click)="start()"> Start</button>
-    </div>
+<div class="card">
+  <div class="containerdiv">
+    <h4>
+      <b>Current Voltage : {{voltage}}</b>
+    </h4>
+  </div>
+</div>
+
+<div class="secondcard">
+  <div id="containerdiv">
+    <button type="button home-button" id="button1" (click)="pause()">Pause</button>
+    <button type="button contact-button" id="button2" (click)="start()"> Start</button>
   </div>
 </div>
